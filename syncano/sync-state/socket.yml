@@ -1,0 +1,108 @@
+name: sync-state
+description: Description of sync-state
+version: 0.0.2
+classes:
+  transaction:
+    - name: entity
+      type: string
+      filter_index: true
+    - name: tid
+      type: string
+    - name: appid
+      type: string
+      filter_index: true
+    - name: user
+      type: reference
+      target: user
+      filter_index: true
+    - name: action
+      type: string
+    - name: payload
+      type: text
+    - name: syncObject
+      type: boolean
+
+  lock:
+    - name: lockID
+      type: string
+      unique: true
+    - name: entity
+      type: string
+      filter_index: true
+    - name: latestTid
+      type: string
+    - name: appid
+      type: string
+      filter_index: true
+    - name: user
+      type: reference
+      target: user
+      filter_index: true
+
+
+endpoints:
+  websocket:
+    channel: websocket.{room}
+
+  user_websocket:
+    channel: user_websocket.{room}.{user}
+
+  list:
+    description: List of transactions for entity
+    file: list.js
+    parameters:
+      appid:
+        type: string
+        description: appid
+        example: appid
+      entity:
+        type: string
+        description: entity
+        example: entity
+      secret:
+        type: boolean
+        description: secret
+        example: true
+
+  sync:
+    description: Create new transaction
+    file: sync.js
+    parameters:
+      entity:
+        description: entity
+        example: entity
+      tid:
+        description: tid
+        example: tid
+      appid:
+        description: appid
+        example: appid
+      action:
+        description: action
+        example: action
+      payload:
+        description: payload
+        example: payload
+      secret:
+        type: boolean
+        description: secret
+        example: true
+      latestTid:
+        description: latestTid
+        example: 3
+    response:
+      success:
+        description: Creates new transaction
+        parameters:
+          id:
+            type: integer
+            description: Created transaction id
+            example: 4
+      reject:
+        status: 409
+        description: Creates new transaction
+        parameters:
+          message:
+            type: string
+            description: conflict
+            example: cant do that sir
