@@ -1,0 +1,5 @@
+hosting:
+  staging:
+    src: build
+    config:
+      browser_router: false
