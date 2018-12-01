@@ -1,9 +1,8 @@
 /* global WebSocket */
-import { applyPatch, applySnapshot } from "mobx-state-tree"
+import { applyPatch } from "mobx-state-tree"
 import _ from 'lodash'
 import crypto from 'crypto'
-import { Component } from 'react'
-import { getSnapshot, destroy, onPatch } from "mobx-state-tree"
+import { onPatch, resolvePath } from "mobx-state-tree"
 import SyncanoClient from '@syncano/client'
 
 class Syncano {
@@ -11,19 +10,18 @@ class Syncano {
     this.queue = []
     this.applied = []
     this.transRegistry = []
-    this.appid = modelName
+    this.appid = appid
     this.entity = modelName
     this.store = store
 
-    this.s = new SyncanoClient(instanceName)
+    this.s = new SyncanoClient(instanceName, {apiVersion: 'v3'})
     this.instanceName = instanceName
 
     this.resolveConflict()
     this.startWS()
     this.tryToFlush()
 
-    onPatch(store, patch => this.patch)
-
+    onPatch(store, patch => this.patch(patch))
   }
 
   genTid () {
@@ -118,8 +116,10 @@ class Syncano {
   getLastTransaction () {
     return this.transRegistry.length > 0 ? this.transRegistry[this.transRegistry.length - 1] : null
   }
+
   getLastTid () {
     const lastTransaction = this.getLastTransaction()
+    
     return lastTransaction ? lastTransaction.tid : null
   }
 
@@ -159,22 +159,27 @@ class Syncano {
     this.transRegistry.push(transaction)
   }
 
-  run (payload, event) {
-    const actionName = payload.payload
+  // Patch is comming from MST
+  patch (payload) {
     if (this.applying) {
       console.log('NOT APPLYING!')
       return
     }
+
+    const actionName = payload.op
     console.log('Running action', actionName, payload)
-    console.log(this.state)
+
+    console.log('XXX', this.store.todos.toJSON())
 
     const params = {
       entity: this.entity,
       appid: this.appid,
       action: actionName,
       payload: JSON.stringify(payload),
+      node: resolvePath(this.store, payload.path).toJSON(),
       tid: this.genTid()
     }
+
     this.queue.push(params)
     // this[actionName](payload, event)
   }

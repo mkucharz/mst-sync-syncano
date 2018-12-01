@@ -1,40 +1,30 @@
-import { types, getRoot, destroy, onPatch } from "mobx-state-tree"
+import {types, destroy} from 'mobx-state-tree'
 import { SHOW_ALL, SHOW_COMPLETED, SHOW_ACTIVE } from "../constants/TodoFilters"
+import uuidv1 from 'uuid/v1'
+import {Todo} from './todo'
 
-const filterType = types.union(...[SHOW_ALL, SHOW_COMPLETED, SHOW_ACTIVE].map(types.literal))
+const generateId = () => {
+  return uuidv1()
+}
+
 const TODO_FILTERS = {
     [SHOW_ALL]: () => true,
     [SHOW_ACTIVE]: todo => !todo.completed,
     [SHOW_COMPLETED]: todo => todo.completed
 }
+const filterType = types.union(...[SHOW_ALL, SHOW_COMPLETED, SHOW_ACTIVE].map(types.literal))
 
-const Todo = types
-    .model({
-        text: types.string,
-        completed: false,
-        id: types.identifier(types.number)
-    })
-    .actions(self => ({
-        remove() {
-            getRoot(self).removeTodo(self)
-        },
-        edit(text) {
-            self.text = text
-        },
-        complete() {
-            self.completed = !self.completed
-        }
-    }))
-
-const TodoStore = types
-    .model({
-        todos: types.array(Todo),
+export const TodoStore = types
+    .model('TodoStore', {
+        todos: types.optional(types.array(Todo), []),
         filter: types.optional(filterType, SHOW_ALL)
     })
     .views(self => ({
         get completedCount() {
             return self.todos.reduce((count, todo) => (todo.completed ? count + 1 : count), 0)
         },
+    }))
+    .views(self => ({
         get activeCount() {
             return self.todos.length - self.completedCount
         },
@@ -45,9 +35,11 @@ const TodoStore = types
     .actions(self => ({
         // actions
         addTodo(text) {
-            const id = self.todos.reduce((maxId, todo) => Math.max(todo.id, maxId), -1) + 1
+            // const id = self.todos.reduce((maxId, todo) => Math.max(todo.id, maxId), -1) + 1
+            const uid = generateId()
+
             self.todos.unshift({
-                id,
+                uid,
                 text
             })
         },
@@ -67,4 +59,4 @@ const TodoStore = types
         }
     }))
 
-export default TodoStore
+// export interface TodoStore extends Instance<typeof TodoStore> {}

@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+mkdir -p .dist
+# cp ../../src/models/* src/
+npx babel src --out-dir .dist/src --copy-files --extensions ".ts"

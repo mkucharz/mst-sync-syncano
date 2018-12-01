@@ -1,5 +1,5 @@
 import * as S from '@eyedea/syncano'
-import crypto from 'crypto'
+import * as crypto from 'crypto'
 
 interface Args {
   appid: string
@@ -11,11 +11,12 @@ interface Args {
   latestTid: string
   fromSocket: boolean
   syncObject: boolean
+  node: object
 }
 
 class Endpoint extends S.Endpoint {
   async run(
-    {data, channel, response}: S.Core,
+    {data, channel, event}: S.Core,
     {args, meta}: S.Context<Args>
   ) {
     const {user} = meta
@@ -29,6 +30,7 @@ class Endpoint extends S.Endpoint {
       latestTid = null,
       fromSocket,
       syncObject = false,
+      node,
     } = args
 
     const transactionParams = {
@@ -43,25 +45,27 @@ class Endpoint extends S.Endpoint {
       syncObject,
     }
 
+    this.logger.info('New transaction args', args)
     this.logger.info('New transaction', transactionParams)
 
+    // Get or create lock
     let lock
     try {
-      lock = await this.syncano.data.lock.create({
+      lock = await data.lock.create({
         lockID: `${appid}-${entity}`,
         appid,
         entity,
         latestTid: tid,
       })
     } catch (err) {
-      lock = await this.syncano.data.lock.where('lockID', `${appid}-${entity}`).first()
-    }
+      lock = await data.lock.where('lockID', `${appid}-${entity}`).first()
+  }
 
-    // let query = this.syncano.data.lock
+    // let query = data.lock
     //   .where('appid', appid)
     //   .where('entity', entity)
     //
-    // const userId = user ? user.id : null
+    const userId = user ? user.id : null
     //
     // if (secret === true && userId === null) {
     //   throw new Error('If creating a secret object you must be logged in')
@@ -98,7 +102,7 @@ class Endpoint extends S.Endpoint {
     }
 
     // Update lock ID
-    await this.syncano.data.lock.update(lock.id, {
+    await data.lock.update(lock.id, {
       expected_revision: lock.revision,
       latestTid: tid,
     })
@@ -120,13 +124,28 @@ class Endpoint extends S.Endpoint {
       }
     }
 
-    const createdTransaction = await this.syncano.data.transaction.create(params)
+    const createdTransaction = await data.transaction.create(params)
     const messagesString = secret === true && userId !== null
       ? `user_websocket.${appid}-${entity}.${userId}`
       : `websocket.${appid}-${entity}`
 
-    this.syncano.channel.publish(messagesString,
-      {appid, entity, action, payload, syncObject, tid, id: createdTransaction.id, latestTid})
+    channel.publish(
+      messagesString,
+      {
+        appid,
+        entity,
+        action,
+        payload,
+        syncObject,
+        tid,
+        id: createdTransaction.id,
+        latestTid,
+      }
+    )
+
+    const op = JSON.parse(payload).op
+    console.log('XXX', `${entity}.${op}`, {payload, latestTid: tid, node})
+    event.emit(`${entity}.${op}`, {payload, latestTid: tid, node})
 
     // const transPayload = JSON.parse(args.payload)
     // if (transPayload.syncObject && !fromSocket) {

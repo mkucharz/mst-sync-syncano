@@ -47,6 +47,9 @@ endpoints:
   user_websocket:
     channel: user_websocket.{room}.{user}
 
+  reset:
+    description: Clear database
+    
   list:
     description: List of transactions for entity
     file: list.js

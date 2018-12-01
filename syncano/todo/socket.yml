@@ -1,0 +1,25 @@
+name: todo
+description: Description of sync-state
+
+classes:
+  todo:
+    - name: text
+      type: string
+      filter_index: true
+    - name: uid
+      type: string
+      filter_index: true
+    - name: completed
+      type: boolean
+
+endpoints:
+  add:
+    description: ToDo
+
+event_handlers:
+  events.todo-store.add:
+    file: add.js
+    description: Handle adding ToDo
+  events.todo-store.remove:
+    file: remove.js
+    description: Handle removing ToDo

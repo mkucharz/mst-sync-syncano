@@ -13,7 +13,7 @@ export default observer(
             this.setState({ editing: true })
         }
 
-        handleSave = (id, text) => {
+        handleSave = (uid, text) => {
             const { todo } = this.props
             if (text.length === 0) {
                 todo.remove()
@@ -32,7 +32,7 @@ export default observer(
                     <TodoTextInput
                         text={todo.text}
                         editing={this.state.editing}
-                        onSave={text => this.handleSave(todo.id, text)}
+                        onSave={text => this.handleSave(todo.uid, text)}
                     />
                 )
             } else {
