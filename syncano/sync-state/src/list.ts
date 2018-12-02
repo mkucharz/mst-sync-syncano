@@ -36,7 +36,7 @@ class Endpoint extends S.Endpoint {
       return response.json(transactions)
     } catch (err) {
       console.log(err)
-      
+
       return response.json({message: err.message}, 400)
     }
   }

@@ -46,7 +46,6 @@ function createTodoStore(snapshot) {
     //     completed: false
     // }
     ]})
-
     // connect devtools
     // connectReduxDevtools(require("remotedev"), store)
     // connect local storage

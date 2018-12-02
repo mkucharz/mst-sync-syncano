@@ -1,34 +1,76 @@
 import * as S from '@eyedea/syncano'
 import {Connector} from './syncano'
-import {TodoStoreModel} from './todo-store'
+import {types, flow} from 'mobx-state-tree'
+// import {TodoStoreModel} from './todo-store'
+// import {TodoModel} from './todo'
+import uuidv1 from 'uuid/v1'
 
-interface Args {
-  payload: string
+const generateId = () => {
+  return uuidv1()
 }
 
 class Endpoint extends S.Endpoint {
   async run(
-    {data, endpoint}: S.Core,
+    {data, response}: S.Core,
     {args, meta}: S.Context<Args>
   ) {
-    const store = TodoStoreModel.create()
+
+    const lastTid = args.latestTid
+
+    const TodoModel = types
+      .model({
+          text: types.maybeNull(types.string),
+          completed: false,
+          dbid: types.maybeNull(types.integer),
+          uid: types.identifier,
+      })
+      .actions(() => ({
+        remove: flow(function* (actionArgs: any) {
+          console.log('XXX remove')
+          // if (connection.applyingNow === args.latestTid) {
+          //   console.warn('Deleting!', {actionArgs})
+          //   yield data.todo.delet(actionArgs)
+          // }
+        }),
+      }))
+
+    const TodoStore = types
+      .model('TodoStore', {
+        todos: types.optional(types.array(TodoModel), []),
+      })
+      .actions(self => ({
+        addTodo: flow(function* (actionArgs: any) {
+
+          let obj
+          if (connection.applyingNow === args.latestTid) {
+            obj = yield data.todo.create({text: actionArgs})
+            console.warn('Adding!', {actionArgs})
+          }
+
+          const uid = generateId()
+
+          self.todos.unshift({
+              uid,
+              dbid: obj.id || null,
+              text: actionArgs,
+          })
+        }),
+      }))
+
+    const store = TodoStore.create()
     const connection = new Connector({
-      appid: 'todos-app', 
-      modelName: 'todo-store', 
-      store, 
+      appid: 'todos-app',
+      modelName: 'todo-store',
+      store,
       syncano: this.syncano,
     })
     await connection.start()
-
-    const payload = JSON.parse(args.payload)
-
-    await data.todo.create(payload.value)
   }
 }
 
 export default ctx => {
   ctx.meta.metadata = {
-    inputs: {}
+    inputs: {},
   }
 
   return new Endpoint(ctx)

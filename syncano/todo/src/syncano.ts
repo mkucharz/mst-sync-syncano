@@ -2,8 +2,8 @@ import _ from 'lodash'
 import * as crypto from 'crypto'
 import * as S from '@eyedea/syncano'
 
-import { applyPatch, IAnyStateTreeNode, IJsonPatch } from "mobx-state-tree"
-import { onPatch } from "mobx-state-tree"
+import { applyAction, IAnyStateTreeNode, IJsonPatch, ISerializedActionCall } from "mobx-state-tree"
+import { onAction } from "mobx-state-tree"
 
 interface Transaction {
     id?: number
@@ -15,23 +15,24 @@ interface Transaction {
 }
 
 interface ConnectorConstructor {
-  appid: string 
-  modelName: string 
+  appid: string
+  modelName: string
   store: IAnyStateTreeNode
   syncano: S.Core
 }
 
 export class Connector {
-    queue: Transaction[];
-    applied: Transaction[];
-    transRegistry: Transaction[];
-    appid: string;
-    entity: string;
-    store: IAnyStateTreeNode;
-    offline: boolean;
-    conflict: boolean;
-    applying: boolean;
-    syncano: S.Core;
+    queue: Transaction[]
+    applied: string[]
+    transRegistry: Transaction[]
+    appid: string
+    entity: string
+    store: IAnyStateTreeNode
+    offline: boolean
+    conflict: boolean
+    applying: boolean
+    syncano: S.Core
+    applyingNow: any
 
   constructor ({appid, modelName, store, syncano}: ConnectorConstructor) {
     this.queue = []
@@ -42,7 +43,7 @@ export class Connector {
     this.store = store
     this.syncano = syncano
 
-    onPatch(store, patch => this.patch(patch))
+    onAction(store, patch => this.patch(patch))
     // this.resolveConflict()
     // this.tryToFlush()
   }
@@ -61,7 +62,8 @@ export class Connector {
 
     console.log('searchId', searchId)
     try {
-      const list = await this.syncano.endpoint.post('sync-state/list', { entity: this.entity, appid: this.appid, lastId: searchId })
+      const list = await this.syncano.endpoint.post('sync-state/list', {
+         entity: this.entity, appid: this.appid, lastId: searchId })
       if (list.length > 0) {
         this.transRegistry = list
 
@@ -76,13 +78,13 @@ export class Connector {
     }
   }
 
-
   getLastTransaction () {
     return this.transRegistry.length > 0 ? this.transRegistry[this.transRegistry.length - 1] : null
   }
 
   getLastTid () {
     const lastTransaction = this.getLastTransaction()
+
     return lastTransaction ? lastTransaction.tid : null
   }
 
@@ -110,31 +112,36 @@ export class Connector {
     }
   }
 
-  apply (transaction) {
-    // console.log('apply:', transaction)
+  apply (transaction: Transaction) {
+    console.log('apply:', transaction)
     // this[transaction.action](JSON.parse(transaction.payload))
     this.applying = true
-    applyPatch(this.store, JSON.parse(transaction.payload))
+    this.applyingNow = transaction.tid
+
+    const action: ISerializedActionCall = JSON.parse(transaction.payload)
+
+    applyAction(this.store, action)
+
     this.applied.push(transaction.tid)
+    this.applyingNow = null
     this.applying = false
     this.transRegistry.push(transaction)
   }
 
   // Patch is comming from MST
-  patch (jsonPatch: IJsonPatch) {
+  patch (action: ISerializedActionCall) {
     if (this.applying) {
-    //   console.log('NOT APPLYING!')
+      console.log('NOT APPLYING!')
       return
     }
 
-    const actionName = jsonPatch.op
-    console.log('Running action', actionName, jsonPatch)
+    console.log('Running action', action.name, action)
 
     const params = {
       entity: this.entity,
       appid: this.appid,
-      action: actionName,
-      payload: JSON.stringify(jsonPatch),
+      action: action.name,
+      payload: JSON.stringify(action.args),
       tid: this.genTid()
     }
 

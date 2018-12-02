@@ -1,8 +1,8 @@
 /* global WebSocket */
-import { applyPatch } from "mobx-state-tree"
+import { applyAction } from "mobx-state-tree"
 import _ from 'lodash'
 import crypto from 'crypto'
-import { onPatch, resolvePath } from "mobx-state-tree"
+import { onAction, resolvePath } from "mobx-state-tree"
 import SyncanoClient from '@syncano/client'
 
 class Syncano {
@@ -21,7 +21,7 @@ class Syncano {
     this.startWS()
     this.tryToFlush()
 
-    onPatch(store, patch => this.patch(patch))
+    onAction(store, patch => this.patch(patch))
   }
 
   genTid () {
@@ -119,7 +119,7 @@ class Syncano {
 
   getLastTid () {
     const lastTransaction = this.getLastTransaction()
-    
+
     return lastTransaction ? lastTransaction.tid : null
   }
 
@@ -153,7 +153,7 @@ class Syncano {
     console.log('apply:', transaction)
     // this[transaction.action](JSON.parse(transaction.payload))
     this.applying = true
-    applyPatch(this.store, JSON.parse(transaction.payload))
+    applyAction(this.store, JSON.parse(transaction.payload))
     this.applied.push(transaction.tid)
     this.applying = false
     this.transRegistry.push(transaction)
@@ -176,7 +176,6 @@ class Syncano {
       appid: this.appid,
       action: actionName,
       payload: JSON.stringify(payload),
-      node: resolvePath(this.store, payload.path).toJSON(),
       tid: this.genTid()
     }
 

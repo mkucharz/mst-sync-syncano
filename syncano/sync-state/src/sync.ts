@@ -143,9 +143,9 @@ class Endpoint extends S.Endpoint {
       }
     )
 
-    const op = JSON.parse(payload).op
-    console.log('XXX', `${entity}.${op}`, {payload, latestTid: tid, node})
-    event.emit(`${entity}.${op}`, {payload, latestTid: tid, node})
+    const actionName = JSON.parse(payload).name
+    console.log('XXX', `${entity}.${actionName}`, {payload, latestTid: tid})
+    event.emit(`${entity}.${actionName}`, {payload, latestTid: tid})
 
     // const transPayload = JSON.parse(args.payload)
     // if (transPayload.syncObject && !fromSocket) {
@@ -175,6 +175,7 @@ class Endpoint extends S.Endpoint {
   }
 
   endpointDidCatch(err: Error) {
+    console.log('XXX', err)
     this.logger.error(err)
     this.syncano.response.json({message: err.message}, 409)
   }

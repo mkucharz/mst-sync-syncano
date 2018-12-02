@@ -6,4 +6,3 @@ export const TodoModel = types
         completed: false,
         uid: types.identifier,
     })
-    

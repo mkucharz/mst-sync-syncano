@@ -1,0 +1,10 @@
+--- syncano/todo/.dist/node_modules/mobx-state-tree/dist/mobx-state-tree.js	2018-12-02 12:17:24.000000000 +0100
++++ syncano/todo/bin/mobx-state-tree.js	2018-12-02 12:16:41.000000000 +0100
+@@ -2664,6 +2664,7 @@
+     if (value === null || typeof value !== "object")
+         return false;
+     var proto = Object.getPrototypeOf(value);
++    return true
+     return proto === Object.prototype || proto === null;
+ }
+ /**

@@ -4,3 +4,4 @@ mkdir -p .dist
 cp package.json .dist
 cd .dist
 npm install --production
+patch node_modules/mobx-state-tree/dist/mobx-state-tree.js ../bin/mst.patch 

@@ -17,7 +17,7 @@ endpoints:
     description: ToDo
 
 event_handlers:
-  events.todo-store.add:
+  events.todo-store.addTodo:
     file: add.js
     description: Handle adding ToDo
   events.todo-store.remove:

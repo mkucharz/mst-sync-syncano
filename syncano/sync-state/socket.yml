@@ -49,7 +49,7 @@ endpoints:
 
   reset:
     description: Clear database
-    
+
   list:
     description: List of transactions for entity
     file: list.js
